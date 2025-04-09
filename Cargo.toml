@@ -1,0 +1,23 @@
+[package]
+name = "decentralized_identity_management"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+solana-program = "1.17.0"
+borsh = "0.10.3"
+borsh-derive = "0.10.3"
+thiserror = "1.0.50"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dev-dependencies]
+solana-client = "1.18.26"
+solana-program-test = "1.18.26"
+solana-sdk = "1.18.26"
+tokio = "1.44.2"
+
+[[example]]
+name = "client"
+path = "examples/client.rs"
