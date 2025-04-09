@@ -11,7 +11,7 @@ use std::str::FromStr;
 #[tokio::main]
 async fn main() {
     
-    let program_id = Pubkey::from_str("91tVFdZmEJDdvG5HfDgQegfEzhhYYWYCXMcY7r86fjvk").unwrap();
+    let program_id = Pubkey::from_str("solana-test-validator").unwrap();
 
     let rpc_url = String::from("http://127.0.0.1:8899");
     let client = RpcClient::new_with_commitment(rpc_url, CommitmentConfig::confirmed());

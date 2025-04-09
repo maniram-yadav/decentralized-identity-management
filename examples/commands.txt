@@ -14,3 +14,4 @@ cargo add solana-client@1.18.26 --dev
 solana address -k ./target/deploy/decentralized_identity_management-keypair.json
 cargo run --example client
 solana-keygen new -o ./target/deploy/hello_world-keypair.json --force
+solana log
