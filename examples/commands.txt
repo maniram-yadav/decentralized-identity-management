@@ -1,0 +1,16 @@
+cargo init hello_world --lib
+cargo add solana-program@1.18.26
+cargo build-sbf
+solana address -k ./target/deploy/decentralized_identity_management-keypair.json
+cargo add solana-program-test@1.18.26 --dev
+cargo add solana-sdk@1.18.26 --dev
+cargo add tokio --dev
+cargo test-sbf
+solana config set -ul
+solana-test-validator
+solana program deploy ./target/deploy/decentralized_identity_management.so
+mkdir -p examples
+cargo add solana-client@1.18.26 --dev
+solana address -k ./target/deploy/decentralized_identity_management-keypair.json
+cargo run --example client
+solana-keygen new -o ./target/deploy/hello_world-keypair.json --force
