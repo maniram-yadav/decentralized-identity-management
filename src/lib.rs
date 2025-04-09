@@ -2,6 +2,15 @@ extern crate solana_program;
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey,
 };
+use borsh::{BorshDeserialize, BorshSerialize};
+
+mod diddocument;
+mod didinstruction;
+mod didpublickey;
+mod didservice;
+use diddocument::DIDDocument;
+use didinstruction::DIDInstruction;
+// use crate::didinstruction::DIDInstruction;
 
 entrypoint!(process_instruction);
 
@@ -10,6 +19,28 @@ pub fn process_instruction(
     _accounts: &[AccountInfo],
     _instruction_data: &[u8],
 ) -> ProgramResult {
+    
+    let instruction = DIDInstruction::try_from_slice(_instruction_data)?;
+    match instruction {
+        DIDInstruction::CreateDID{ initial_doc } => {
+            msg!{"CreateDID"};
+        },
+        DIDInstruction::UpdateDID{ updated_doc } => {
+            msg!{"UpdateDID"};
+        },
+        DIDInstruction::AddPublicKey{ public_key } => {
+            msg!{"AddPublicKey"};
+        },
+        DIDInstruction::RemovePublicKey{ key_id } => {
+            msg!{"RemovePublicKey"};
+        },
+        DIDInstruction::AddService{ service } => {
+            msg!{"AddService"};
+        },
+        DIDInstruction::RemoveService{ service_id } => {
+            msg!{"RemoveService"};
+        },
+    }
     msg!("Hello, world!");
     Ok(())
 }
