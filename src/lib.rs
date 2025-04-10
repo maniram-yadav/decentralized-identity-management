@@ -52,7 +52,7 @@ pub fn process_instruction(
         },
         DIDInstruction::AddService{ service } => {
             msg!{"AddService"};
-            return add_service();
+            return add_service(_program_id,_accounts,service);
         },
         DIDInstruction::RemoveService{ service_id } => {
             msg!{"RemoveService"};
@@ -175,7 +175,7 @@ fn add_public_key(program_id : &Pubkey,
 fn remove_public_key(program_id:&Pubkey,
         accounts:&[AccountInfo],
         key_id : String) -> ProgramResult {
-            
+
             let account_iter = &mut accounts.iter();
             let did_account = next_account_info(account_iter)?;
             let owner = next_account_info(account_iter)?;
@@ -209,7 +209,44 @@ fn remove_public_key(program_id:&Pubkey,
 }
 
 
-fn add_service() -> ProgramResult {
+fn add_service(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    new_service: DIDService) -> ProgramResult {
+
+        let accounts_iter = &mut accounts.iter();
+    let did_account = next_account_info(accounts_iter)?;
+    let owner = next_account_info(accounts_iter)?;
+    let clock = Clock::get()?;
+
+    
+    if did_account.owner != program_id {
+        msg!("DID account is not owned by the program");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    if !owner.is_signer {
+        msg!("Owner did not sign the transaction");
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    let mut current_doc = DIDDocument::try_from_slice(&did_account.data.borrow())?;
+
+    if current_doc.owner != *owner.key {
+        msg!("Signer is not the owner of the DID");
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    if current_doc.services.iter().any(|s| s.id==new_service.id) {
+        msg!("Service with this ID already exists");
+        return Err(ProgramError::InvalidAccountData);
+    }
+    
+    current_doc.services.push(new_service);
+    current_doc.version += 1;
+    current_doc.updated = clock.unix_timestamp;
+
+    current_doc.serialize(&mut &mut did_account.data.borrow_mut()[..])?;
     Ok(())
 }
 
