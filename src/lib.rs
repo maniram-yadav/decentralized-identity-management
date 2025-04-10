@@ -18,6 +18,8 @@ mod didservice;
 
 use didinstruction::DIDInstruction;
 use crate::diddocument::DIDDocument;
+use crate::didpublickey::DIDPublicKey;
+use crate::didservice::DIDService;
 
 entrypoint!(process_instruction);
 pub fn process_instruction(
@@ -38,10 +40,12 @@ pub fn process_instruction(
             msg!{"UpdateDID"};
             return update_did(_program_id, _accounts, updated_doc);
         },
+        
         DIDInstruction::AddPublicKey{ public_key } => {
             msg!{"AddPublicKey"};
-            return add_public_key();
+            return add_public_key(_program_id,_accounts,public_key);
         },
+
         DIDInstruction::RemovePublicKey{ key_id } => {
             msg!{"RemovePublicKey"};
             return remove_public_key();
@@ -126,8 +130,44 @@ fn update_did(program_id : &Pubkey,
 }
 
 
-fn add_public_key() -> ProgramResult {
-    Ok(())
+fn add_public_key(program_id : &Pubkey,
+    accounts : &[AccountInfo],
+    new_public_key :DIDPublicKey) -> ProgramResult {
+
+        let account_iter = &mut accounts.iter();
+        let did_account = next_account_info(account_iter)?;
+        let owner = next_account_info(account_iter)?;
+        let clock = Clock::get()?;
+
+        if did_account.owner != program_id {
+            msg!("DID account is not owned by the program");
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        if !owner.is_signer {
+            msg!("Owner did not sign the transaction");
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+
+        let mut current_doc = DIDDocument::try_from_slice(&did_account.data.borrow())?;
+        if current_doc.owner != *owner.key {
+            msg!("Signer is not the owner of the DID");
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        if current_doc.public_keys.iter().any(|k| k.id == new_public_key.id ) {
+            msg!("Public key with this ID already exists");
+            return Err(ProgramError::InvalidAccountData);    
+        }
+
+        current_doc.public_keys.push(new_public_key);
+        current_doc.version += 1;
+        current_doc.updated = clock.unix_timestamp;
+
+        current_doc.serialize(&mut &mut did_account.data.borrow_mut()[..])?;
+        Ok(())
+
+        
 }
 
 
