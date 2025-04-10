@@ -56,7 +56,7 @@ pub fn process_instruction(
         },
         DIDInstruction::RemoveService{ service_id } => {
             msg!{"RemoveService"};
-            return remove_service();
+            return remove_service(_program_id,_accounts,service_id);
         },
     }
     
@@ -251,7 +251,41 @@ fn add_service(
 }
 
 
-fn remove_service() -> ProgramResult {
+fn remove_service( program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    service_id: String,
+) -> ProgramResult {
+    let accounts_iter = &mut accounts.iter();
+    let did_account = next_account_info(accounts_iter)?;
+    let owner = next_account_info(accounts_iter)?;
+    let clock = Clock::get()?;
+
+    if did_account.owner != program_id {
+        msg!("DID account is not owned by the program");
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    if !owner.is_signer {
+        msg!("Owner did not sign the transaction");
+        return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    let mut current_doc = DIDDocument::try_from_slice(&did_account.data.borrow())?;
+
+    if current_doc.owner != *owner.key {
+        msg!("Signer is not the owner of the DID");
+        return Err(ProgramError::InvalidAccountData);
+    }
+  let index = current_doc.services.iter()
+        .position(|s| s.id == service_id)
+        .ok_or(ProgramError::InvalidAccountData)?;
+
+    current_doc.services.remove(index);
+    current_doc.version += 1;
+    current_doc.updated = clock.unix_timestamp;
+
+    current_doc.serialize(&mut &mut did_account.data.borrow_mut()[..])?;
+
     Ok(())
 }
 
