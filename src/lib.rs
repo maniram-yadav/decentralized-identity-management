@@ -312,7 +312,7 @@ mod tests {
             owner: *owner,
             public_keys: vec![
                 DIDPublicKey {
-                    id: 1,
+                    id: 1.to_string(),
                     key_type: "Ed25519VerificationKey2018".to_string(),
                     public_keys: vec![
                         1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
