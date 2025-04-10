@@ -36,7 +36,7 @@ pub fn process_instruction(
         },
         DIDInstruction::UpdateDID{ updated_doc } => {
             msg!{"UpdateDID"};
-            return update_did();
+            return update_did(_program_id, _accounts, updated_doc);
         },
         DIDInstruction::AddPublicKey{ public_key } => {
             msg!{"AddPublicKey"};
@@ -89,8 +89,40 @@ fn create_did(program_id : &Pubkey,accounts : &[AccountInfo], doc : DIDDocument 
 
 }
 
-fn update_did() -> ProgramResult {
-    Ok(())
+fn update_did(program_id : &Pubkey,
+        accounts : &[AccountInfo],
+        updated_doc:DIDDocument) -> ProgramResult {
+          
+            let account_iter = &mut accounts.iter();
+            let did_account = next_account_info(account_iter)?;
+            let owner = next_account_info(account_iter)?;
+            let clock = Clock::get()?;
+
+            if did_account.owner != program_id {
+                msg!("DID account is not owned by the program");
+                return Err(ProgramError::IncorrectProgramId);
+            }
+             
+            if !owner.is_signer {
+                msg!("Owner did not sign the transaction");
+                return Err(ProgramError::MissingRequiredSignature);
+            }
+            
+            let mut current_doc = DIDDocument::try_from_slice(&did_account.data.borrow())?;
+            if current_doc.owner != *owner.key {
+                
+                msg!("Signer is not the owner of the DID");
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            if updated_doc.version <= current_doc.version {
+                msg!("Version must increment");
+                return Err(ProgramError::InvalidAccountData);
+            }
+            current_doc = updated_doc;
+            current_doc.updated = clock.unix_timestamp;
+            current_doc.serialize(&mut &mut did_account.data.borrow_mut()[..])?;
+            Ok(())
 }
 
 
